@@ -64,9 +64,15 @@ export function foliage() {
  * it has to be spotted, reached and taken at sixteen metres a second on a
  * track the colour of a plant pot, and a plain matte one is simply not there
  * in time.
+ *
+ * `side` is in the key rather than set on the way out. Everything here is
+ * shared and cached, so a caller that reached in and flipped `.side` on the
+ * material it was handed flipped it for every other prize dyed the same
+ * colour — which is the sort of thing that works until a second one wants it
+ * the other way.
  */
-export function prize(color, glowStrength = 0.5) {
-  const key = `prize:${color}:${glowStrength}`;
+export function prize(color, glowStrength = 0.5, { side = THREE.FrontSide } = {}) {
+  const key = `prize:${color}:${glowStrength}:${side}`;
   if (!cache.has(key)) {
     cache.set(key, new THREE.MeshStandardMaterial({
       color,
@@ -74,6 +80,7 @@ export function prize(color, glowStrength = 0.5) {
       emissiveIntensity: glowStrength,
       roughness: 0.4,
       metalness: 0.1,
+      side,
     }));
   }
   return cache.get(key);

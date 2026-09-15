@@ -38,8 +38,11 @@ export const THEME = {
 
   /** Things worth going near. */
   crumb: 0xf2c65c,
+  crust: 0xd8a03f,
   feather: 0xffd24a,
+  featherPale: 0xfff0b8,
   straw: 0xd8b85a,
+  strawPale: 0xeed49a,
   puff: 0xeaf4ff,
   patch: 0x7fd6a0,
   yolk: 0xf6b32b,

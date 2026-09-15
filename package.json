@@ -1,0 +1,27 @@
+{
+  "name": "runny-egg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runny Egg — a six-heat egg race with hurdles, crumbs, crashes and birds",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test \"test/**/*.test.js\"",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "jsdom": "^30.0.1",
+    "vite": "^8.2.2"
+  }
+}

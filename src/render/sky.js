@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { cloudStrip } from './textures.js';
+import { cloudStrip, sunDisc } from './textures.js';
 import { THEME } from './theme.js';
 
 /**
@@ -69,8 +69,15 @@ export function createSky() {
   group.add(clouds);
 
   const sun = new THREE.Mesh(
-    new THREE.CircleGeometry(0.075, 32),
-    new THREE.MeshBasicMaterial({ color: THEME.sun, fog: false, depthWrite: false, transparent: true }),
+    new THREE.PlaneGeometry(0.34, 0.34),
+    new THREE.MeshBasicMaterial({
+      map: sunDisc(),
+      color: THEME.sun,
+      fog: false,
+      depthWrite: false,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+    }),
   );
   /** Over the far end of the course, low enough to be in shot. */
   sun.position.set(-0.28, 0.3, 0.9);

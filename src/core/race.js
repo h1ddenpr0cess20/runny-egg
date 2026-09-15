@@ -41,6 +41,8 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
   let carry = 0;
   let held = null;
   let ahead = new Map();
+  /** Whether the current heat's track is laid and the field is on the line. */
+  let lined = false;
 
   const heat = () => heats[Math.min(index, heats.length - 1)];
   const last = () => index >= heats.length - 1;
@@ -426,11 +428,49 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
       last: last(),
     };
 
-    /** Only one of these lets you run again. */
+    /** Only one of these lets you run again. Either way this heat's track is
+     *  spent, and the next call to the line lays a new one. */
+    lined = false;
     state = outcome === 'advance' ? 'ready' : 'over';
     if (outcome === 'advance') index += 1;
     emitter.emit('results', results);
     if (state === 'over') emitter.emit('over', snapshot());
+  }
+
+  /**
+   * Lay a track, turn out a field, and put everybody on the line. Called by
+   * both doors below and guarded by `lined`, so previewing a heat and then
+   * starting it runs the same heat rather than laying a second one.
+   */
+  function lineUp(nextSeed = meetSeed) {
+    if (lined) return;
+    if (state === 'over' || !track) {
+      meetSeed = nextSeed;
+      index = 0;
+      banked = 0;
+      outcome = null;
+      results = null;
+    }
+
+    const card = heat();
+    const seed = meetSeed + index * 1013;
+    track = createTrack({ seed, heat: card });
+    field = createField({ seed, heat: card });
+    player = createRacer(PLAYER_EGG);
+    toTheLine(player, Math.floor(LANES / 2), card.pace);
+
+    state = 'ready';
+    crumbs = 0;
+    overtakes = 0;
+    clean = true;
+    elapsed = 0;
+    carry = 0;
+    held = null;
+    tick.intent = null;
+    ahead = new Map(field.racers.map((rival) => [rival.id, false]));
+    lined = true;
+
+    emitter.emit('heat', snapshot());
   }
 
   function tick(dt) {
@@ -486,37 +526,26 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
     get outcome() { return outcome; },
 
     /**
+     * Lay the next heat's track and put the field on the line, without
+     * starting it. The page calls this so there is a race to look at behind
+     * the card rather than an empty field — the start line is worth seeing.
+     */
+    preview(nextSeed = meetSeed) {
+      if (state === 'running') return snapshot();
+      lineUp(nextSeed);
+      return snapshot();
+    },
+
+    /**
      * Start whatever comes next: the heat you have qualified for, or a whole
      * new meet if the last one is over. One button on the page, one door in
      * here — the page never has to know which of the two it is asking for.
      */
     play(nextSeed = meetSeed) {
       if (state === 'running') return snapshot();
-      if (state === 'over' || !track) {
-        meetSeed = nextSeed;
-        index = 0;
-        banked = 0;
-        outcome = null;
-        results = null;
-      }
-
-      const card = heat();
-      track = createTrack({ seed: meetSeed + index * 1013, heat: card });
-      field = createField({ seed: meetSeed + index * 1013, heat: card });
-      player = createRacer(PLAYER_EGG);
-      toTheLine(player, Math.floor(LANES / 2), card.pace);
-
+      lineUp(nextSeed);
       state = 'running';
-      crumbs = 0;
-      overtakes = 0;
-      clean = true;
-      elapsed = 0;
-      carry = 0;
-      held = null;
-      tick.intent = null;
-      ahead = new Map(field.racers.map((rival) => [rival.id, false]));
-
-      emitter.emit('heat', snapshot());
+      emitter.emit('go', snapshot());
       return snapshot();
     },
 

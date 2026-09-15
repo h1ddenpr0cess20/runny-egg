@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#9fcbe8">
+<meta name="description" content="Runny Egg — a six-heat egg race. Jump the hurdles, miss the stones, mind the other eggs. Three cracks and you are off the card.">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Runny Egg</title>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="hud" aria-hidden="true">
+  <div class="bar">
+    <div class="readout"><span class="label">place</span><b id="place">—</b></div>
+    <div class="readout"><span class="label">heat</span><b id="heat">1/6</b></div>
+    <div class="readout"><span class="label">to go</span><b id="togo">0m</b></div>
+    <div class="readout"><span class="label">time</span><b id="time">0.0</b></div>
+    <div class="readout"><span class="label">score</span><b id="score">0</b></div>
+  </div>
+  <div class="bar bottom">
+    <div class="readout"><span class="label">shell</span><b id="cracks"></b></div>
+    <ul id="effects"></ul>
+  </div>
+</div>
+
+<p id="callout" hidden></p>
+
+<button id="mute" type="button" aria-pressed="false">audio on</button>
+
+<section id="overlay" data-state="ready" aria-live="polite">
+  <p id="overlay-kicker">the meet</p>
+  <h1>Runny Egg<em id="overlay-sub">six heats, one shell</em></h1>
+  <p id="overlay-lead">Six eggs to a field and a bar across all five lanes. Mind the stones, mind the other eggs, and try to arrive in one piece.</p>
+  <dl id="overlay-stats" hidden></dl>
+  <ol id="overlay-board" hidden></ol>
+  <button id="play" type="button">on your marks</button>
+  <ul id="keys">
+    <li><kbd>A</kbd><kbd>D</kbd> lane</li>
+    <li><kbd>W</kbd> jump, twice to flail</li>
+    <li><kbd>S</kbd> tuck — down off a bar, or a hand down mid-wobble</li>
+    <li><kbd>M</kbd> audio</li>
+    <li class="touch">swipe to move · flick up to jump · flick down to tuck</li>
+  </ul>
+</section>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

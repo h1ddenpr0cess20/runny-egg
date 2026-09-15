@@ -107,16 +107,22 @@ export function shade() {
   return cache.get('shade');
 }
 
-/** What is left on the grass where an egg stopped being one. */
+/**
+ * What is left on the grass where an egg stopped being one.
+ *
+ * It sits a centimetre or two clear of the ground and takes no polygon
+ * offset. It used to take a heavy one, to keep it off the turf, and that
+ * pulled it forward far enough in depth to win against the two shell halves
+ * lying *in* it — so the yolk drew over the shell and the shell looked like
+ * frosted glass. Height beats offset here: there is nothing else within a
+ * centimetre of it to fight with.
+ */
 export function spill() {
   if (!cache.has('spill')) {
     cache.set('spill', new THREE.MeshBasicMaterial({
       map: yolkSplat(),
       transparent: true,
       depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -3,
-      polygonOffsetUnits: -3,
       fog: true,
     }));
   }

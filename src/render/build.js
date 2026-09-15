@@ -55,6 +55,34 @@ export function builder() {
       return this;
     },
 
+    /**
+     * Four corners, wound the way they are given, with one normal for the
+     * lot. Boxes cover the fences and the hurdles; this covers everything at
+     * an angle — a tree's crossed canopies, a bunting flag, a treeline.
+     */
+    quad(corners, n) {
+      const base = position.length / 3;
+      corners.forEach((corner, i) => {
+        position.push(corner[0], corner[1], corner[2]);
+        normal.push(n[0], n[1], n[2]);
+        uv.push(...UV[i]);
+      });
+      index.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      return this;
+    },
+
+    /** An upright panel at `angle` about y — a canopy, a board, a flag. */
+    panel(cx, cy, cz, w, h, angle = 0) {
+      const dx = Math.cos(angle) * w / 2;
+      const dz = Math.sin(angle) * w / 2;
+      return this.quad([
+        [cx - dx, cy - h / 2, cz - dz],
+        [cx + dx, cy - h / 2, cz + dz],
+        [cx + dx, cy + h / 2, cz + dz],
+        [cx - dx, cy + h / 2, cz - dz],
+      ], [Math.sin(angle), 0, -Math.cos(angle)]);
+    },
+
     get empty() { return index.length === 0; },
 
     geometry() {

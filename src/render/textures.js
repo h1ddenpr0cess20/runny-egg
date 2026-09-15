@@ -191,6 +191,7 @@ function canopy(ctx, size) {
 /** The clouds, painted once across a strip that wraps round the sky. */
 function clouds(ctx, size, height) {
   ctx.clearRect(0, 0, size, height);
+
   for (let i = 0; i < 26; i++) {
     const cx = Math.random() * size;
     const cy = height * (0.25 + Math.random() * 0.55);
@@ -199,18 +200,39 @@ function clouds(ctx, size, height) {
       const px = cx + (Math.random() - 0.5) * 150 * scale;
       const py = cy + (Math.random() - 0.5) * 32 * scale;
       const r = (16 + Math.random() * 34) * scale;
-      const g = ctx.createRadialGradient(px, py, 0, px, py, r);
       /** Bright on top, grey underneath — a cloud lit from above is the only
        *  thing in the sky that says which way up the world is. */
       const lift = py < cy ? 1 : 0.82;
-      g.addColorStop(0, `rgba(${255 * lift | 0},${253 * lift | 0},${250 * lift | 0},0.5)`);
-      g.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fill();
+
+      /**
+       * Painted three times, a canvas width apart. The strip is wrapped round
+       * a cylinder, so a puff that runs off one edge has to come back on the
+       * other — without this there is a hard vertical seam hanging in the sky
+       * exactly where the texture joins itself.
+       */
+      for (const wrap of [-size, 0, size]) {
+        const g = ctx.createRadialGradient(px + wrap, py, 0, px + wrap, py, r);
+        g.addColorStop(0, `rgba(${255 * lift | 0},${253 * lift | 0},${250 * lift | 0},0.5)`);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px + wrap, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
+
+  /** And faded out top and bottom, so the band the cloud lives on does not
+   *  announce where it stops. */
+  ctx.globalCompositeOperation = 'destination-out';
+  const fade = ctx.createLinearGradient(0, 0, 0, height);
+  fade.addColorStop(0, 'rgba(0,0,0,1)');
+  fade.addColorStop(0.22, 'rgba(0,0,0,0)');
+  fade.addColorStop(0.8, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, size, height);
+  ctx.globalCompositeOperation = 'source-over';
 }
 
 const PAINTERS = { turf, dirt, cinder, wood, bark, canopy };
@@ -299,6 +321,21 @@ export function yolkSplat() {
     ctx.beginPath();
     ctx.arc(mid, mid, mid * 0.33, 0, Math.PI * 2);
     ctx.fill();
+  });
+}
+
+/** The sun, and the haze around it. A bare disc reads as a hole. */
+export function sunDisc() {
+  return clamped('sun', 128, (ctx, size) => {
+    const mid = size / 2;
+    const halo = ctx.createRadialGradient(mid, mid, 0, mid, mid, mid);
+    halo.addColorStop(0, 'rgba(255,250,232,1)');
+    halo.addColorStop(0.28, 'rgba(255,246,214,0.92)');
+    halo.addColorStop(0.42, 'rgba(255,240,196,0.34)');
+    halo.addColorStop(0.72, 'rgba(255,236,186,0.09)');
+    halo.addColorStop(1, 'rgba(255,236,186,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, size, size);
   });
 }
 

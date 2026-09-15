@@ -64,37 +64,59 @@ export function createEgg({ tint = 0xffffff, size = 1, seed = 1 } = {}) {
     dispose() {
       cracks.dispose();
       shell.material.dispose();
-      for (const half of shards.children) half.geometry.dispose();
+      shards.traverse((node) => {
+        if (node.isMesh) {
+          node.geometry.dispose();
+          node.material.dispose();
+        }
+      });
     },
   };
 }
 
 /**
- * Two halves of a shell, hollow, for an egg that did not finish. They are cut
- * off the same profile as the whole one — a broken egg is recognisably the
- * egg it was a second ago, which is most of why it lands.
+ * Two halves of a shell, for an egg that did not finish. They are cut off the
+ * same profile as the whole one — a broken egg is recognisably the egg it was
+ * a second ago, which is most of why it lands.
+ *
+ * Each half is drawn twice: the dyed outside, and a cream inside behind it.
+ * A single double-sided bowl is the obvious way to do this and it is wrong —
+ * with the same colour on both faces and no thickness anywhere, you look
+ * straight into it and the thing reads as a smear of tinted glass rather than
+ * as a piece of shell. Real shell is dyed on one side and not on the other,
+ * and that contrast is the only thing that makes it look solid.
  */
 function createShards(tint) {
   const group = new THREE.Group();
   group.name = 'shards';
 
-  const material = new THREE.MeshStandardMaterial({
+  const outside = new THREE.MeshStandardMaterial({
     color: new THREE.Color(tint).multiplyScalar(0.98),
     roughness: 0.58,
     metalness: 0,
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
+  });
+
+  /** What an eggshell is actually like on the inside, whatever colour it has
+   *  been dyed on the outside. */
+  const inside = new THREE.MeshStandardMaterial({
+    color: 0xf6ecdc,
+    roughness: 0.94,
+    metalness: 0,
+    side: THREE.BackSide,
   });
 
   for (const [i, tilt] of [-1, 1].entries()) {
     /** Half a shell, open along its long axis, so the inside shows. */
-    const geometry = new THREE.SphereGeometry(0.82, 28, 20, 0, Math.PI);
+    const geometry = new THREE.SphereGeometry(0.8, 28, 20, 0, Math.PI);
     const positions = geometry.attributes.position.array;
     for (let p = 0; p < positions.length; p += 3) positions[p + 1] *= 1.12;
     geometry.computeVertexNormals();
 
-    const half = new THREE.Mesh(geometry, material);
-    half.rotation.set(Math.PI / 2 + tilt * 0.35, tilt * 0.9, tilt * 0.5);
-    half.position.set(tilt * 0.42, -0.62, i * 0.12 - 0.06);
+    const half = new THREE.Group();
+    half.add(new THREE.Mesh(geometry, outside), new THREE.Mesh(geometry, inside));
+    half.rotation.set(Math.PI / 2 + tilt * 0.4, tilt * 1.1, tilt * 0.5);
+    half.position.set(tilt * 0.52, -0.6, i * 0.16 - 0.08);
     group.add(half);
   }
 

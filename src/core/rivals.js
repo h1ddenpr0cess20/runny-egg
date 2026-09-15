@@ -49,6 +49,10 @@ const TRAFFIC = { z: 3.6, lane: 2.4 };
  */
 const JOCKEY = { soonest: 2.2, latest: 6.5 };
 
+/** How much of a look even the most nervous egg in the field takes before it
+ *  moves over for no particular reason. */
+const CARE = { idle: 0.4 };
+
 function blank() {
   return { left: 0, right: 0, jump: false, tuck: false };
 }
@@ -171,9 +175,18 @@ export function createField({ seed = 1, heat, lanes = LANES } = {}) {
       const side = mind.luck() < 0.5 ? -1 : 1;
       const lane = racer.lane + side;
       if (lane < 0 || lane >= lanes) return intent;
-      /** A poised egg looks before it moves. A nervous one is why you have
-       *  three cracks and not one. */
-      if (mind.luck() < mind.poise && !clearLane(racer, lane, track, all, racer.z + 0.5, near)) return intent;
+      /**
+       * Look before you move. A shoulder puts both eggs on the grass now, so
+       * an idle switch into an occupied lane costs the egg making it as much
+       * as it costs whoever was in it — and a field that pulled out without
+       * looking four times in ten spent the meet crashing into itself.
+       *
+       * Nerve still shows: the poised ones check every time, the nervous ones
+       * mostly. Where it still tells is the swerve below, which is the one
+       * made in a panic with a stone coming.
+       */
+      if (mind.luck() < CARE.idle + (1 - CARE.idle) * mind.poise
+        && !clearLane(racer, lane, track, all, racer.z + 0.5, near)) return intent;
       if (side < 0) intent.left += 1;
       else intent.right += 1;
       return intent;

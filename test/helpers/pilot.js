@@ -50,12 +50,18 @@ export function pilot(race) {
 
 /** Run one heat out, to the tape or to `seconds`, and report what happened. */
 export function runHeat(race, { seconds = 180, fps = 60, drive = pilot, seed } = {}) {
-  const seen = { crack: 0, fall: 0, trip: 0, broke: [], overtake: 0 };
+  /**
+   * Yours, and the whole field's. `incidents` counts everybody's — one crude
+   * autopilot's luck with the stones says nothing about whether the rest of
+   * them are having a race, and it is the field that the drama is supposed to
+   * come from.
+   */
+  const seen = { crack: 0, fall: 0, trip: 0, broke: [], overtake: 0, incidents: 0 };
   const off = [
     race.on('crack', (e) => { if (e.player) seen.crack += 1; }),
-    race.on('fall', (e) => { if (e.player) seen.fall += 1; }),
-    race.on('trip', (e) => { if (e.player) seen.trip += 1; }),
-    race.on('break', (e) => seen.broke.push(e.racer.name)),
+    race.on('fall', (e) => { seen.incidents += 1; if (e.player) seen.fall += 1; }),
+    race.on('trip', (e) => { seen.incidents += 1; if (e.player) seen.trip += 1; }),
+    race.on('break', (e) => { seen.incidents += 1; seen.broke.push(e.racer.name); }),
     race.on('overtake', () => { seen.overtake += 1; }),
   ];
 

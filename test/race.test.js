@@ -261,7 +261,21 @@ describe('race', () => {
       assert.ok(race.player.grace <= GRACE);
     });
 
-    it('goes through the back of one on a feather, without paying for it', () => {
+    it('takes the egg that ran into you down with you', () => {
+      const race = started(3);
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+
+      const cracked = new Set();
+      const floored = new Set();
+      race.on('crack', (e) => cracked.add(e.racer.id));
+      race.on('fall', (e) => floored.add(e.racer.id));
+      play(race, 1.2);
+      assert.deepEqual([...floored].sort(), ['marc', rival.id].sort(), 'somebody kept their feet');
+      assert.deepEqual([...cracked].sort(), ['marc', rival.id].sort(), 'somebody got up unmarked');
+    });
+
+    it('goes through the back of one on a feather, and spends the feather on it', () => {
       const race = started(3);
       race.track.debris.length = 0;
       race.player.boost = BOOST.time;
@@ -274,6 +288,8 @@ describe('race', () => {
       assert.ok(barged, 'the boost went straight through without touching');
       assert.equal(barged.hit.id, rival.id);
       assert.ok(rival.down > 0, 'the barged egg stayed on its feet');
+      assert.ok(race.player.down <= 0, 'the barger went down with it');
+      assert.equal(race.player.boost, 0, 'the feather survived the egg it went through');
     });
 
     it('goes over an egg already on the floor for the price of your balance', () => {
@@ -287,6 +303,18 @@ describe('race', () => {
       race.on('trip', (e) => { if (e.player) trips.push(e.reason); });
       play(race, 0.4);
       assert.deepEqual(trips, ['heap']);
+    });
+
+    it('treads the one on the floor back down rather than stepping over it', () => {
+      const race = started(3);
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+      /** On its way up, which is the moment a boot in the back costs it. */
+      rival.down = 0.05;
+
+      race.advance(1 / 60, null);
+      assert.ok(rival.down > 0.05, 'the egg on the grass got up as if nobody had been over it');
+      assert.ok(race.player.cracks === 0 && rival.cracks === 0, 'a heap cracked somebody');
     });
   });
 
@@ -469,19 +497,26 @@ describe('race', () => {
   });
 
   it('gives the field a race, not a procession', () => {
-    /** Somebody should be crashing, somebody should be passing you, and the
-     *  order at the tape should not be the order off the line. */
+    /**
+     * Somebody should be crashing, somebody should be passing you, and the
+     * order at the tape should not be the order off the line.
+     *
+     * Counted over the whole field rather than over your own shell, which is
+     * the only way to count it: the player here is a crude autopilot, and
+     * whether it happened to take four stones in a row on one seed is its luck
+     * with a line, not evidence about the race going on around it.
+     */
     let incidents = 0;
     let churn = 0;
     for (const seed of SEEDS) {
       const race = createRace({ seed, heats: HEATS.slice(3) });
       const heat = runHeat(race, { seconds: 200, seed });
-      incidents += heat.seen.trip + heat.seen.fall + heat.seen.broke.length;
+      incidents += heat.seen.incidents;
       const order = heat.results.standings.map((row) => row.id).join();
       const lined = ['marc', ...race.rivals.map((rival) => rival.id)].join();
       if (order !== lined) churn += 1;
     }
-    assert.ok(incidents > SEEDS.length, `only ${incidents} incidents over ${SEEDS.length} heats`);
+    assert.ok(incidents > SEEDS.length * 3, `only ${incidents} incidents over ${SEEDS.length} heats`);
     assert.ok(churn >= SEEDS.length - 1, 'the field finished in the order it started');
   });
 });

@@ -57,6 +57,12 @@ wobbling from the last one, puts you down — and going down is what cracks a
 shell. So is a bar taken badly, and so is another egg. Three of them and what
 was inside you is on the grass, and that is the meet.
 
+Another egg costs two shells, not one. A shoulder at that pace puts the pair of
+you on the grass whoever came across whom, and what is still decided between
+you is only who gets up first: the one that was already wobbling, or giving
+away size, or catching the heels of the one in front, is the one lying there
+watching the other go. There is nothing to be won by leaning on somebody.
+
 The tuck is the answer to most of it. In the air it drops you twenty-two metres
 a second, which is how you come off a hurdle without floating into the next
 one. On the floor, mid-wobble, it is a hand down: the stumble is over, and it
@@ -72,7 +78,7 @@ turn up rather less often:
 
 | | |
 |---|---|
-| **feather** | a surge of pace — and an egg with one on goes straight through the back of anybody in the way |
+| **feather** | a surge of pace — and an egg with one on goes straight through the back of anybody in the way, which is what the feather gets spent on |
 | **straw** | sure-footed: for a few seconds the whole track is flat and stones are something you crunch over |
 | **puff** | light on your feet, so a bar is a formality |
 | **patch** | one crack mended |
@@ -124,7 +130,9 @@ run round — including you.
 They also move over for no reason at all, every few seconds, because without
 that the field runs the whole heat in the lanes it started in. Jockeying is
 most of the contact in a race, and contact is most of what three cracks are
-for.
+for. They do look first, mind — not always, and the nervous ones least of all,
+but a shoulder cracks the egg that threw it as surely as the egg that took it,
+and a field that never looked spent the meet crashing into itself.
 
 ## How it holds together
 

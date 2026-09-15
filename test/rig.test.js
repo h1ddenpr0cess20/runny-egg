@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import * as THREE from 'three';
 
 import { LANES, laneX } from '../src/core/tuning.js';
-import { focus, rigFor, seat, TALL, WIDE } from '../src/render/rig.js';
+import { focus, PRIZE, prizeSwell, rigFor, seat, TALL, WIDE } from '../src/render/rig.js';
 
 /**
  * The bug this file exists for: the chase camera sits behind the egg and looks
@@ -72,5 +72,50 @@ describe('the chase camera', () => {
     assert.equal(rigFor(16 / 9), WIDE);
     assert.equal(rigFor(0.46), TALL);
     assert.ok(TALL.up > WIDE.up && TALL.back < WIDE.back);
+  });
+});
+
+/** A crumb, which is the smallest thing on the course worth seeing. */
+const CRUMB = 0.22;
+
+/**
+ * How much of the screen's height a crumb covers, that far up the track. This
+ * is the number the swell exists for: a pickup is only a pickup if it is
+ * visible early enough to cross a lane for, and a phone gets a wider lens and
+ * a hand's width of glass to read the same forty metres through.
+ */
+function apparent(aspect, ahead) {
+  const rig = rigFor(aspect);
+  const player = { x: laneX(Math.floor(LANES / 2)), y: 0, z: 0, lane: Math.floor(LANES / 2) };
+  const camera = new THREE.PerspectiveCamera(aspect < 1 ? 64 : 52, aspect, 0.1, 900);
+
+  camera.position.copy(seat(new THREE.Vector3(), player, 0, rig, 0, () => 0.5));
+  camera.lookAt(focus(new THREE.Vector3(), player, 0, rig));
+  camera.updateMatrixWorld(true);
+
+  const half = (CRUMB * prizeSwell(rig, ahead)) / 2;
+  const x = laneX(Math.floor(LANES / 2));
+  const top = new THREE.Vector3(x, 0.8 + half, ahead).project(camera);
+  const bottom = new THREE.Vector3(x, 0.8 - half, ahead).project(camera);
+  /** NDC runs -1 to 1, so half of the extent is the fraction of the height. */
+  return Math.abs(top.y - bottom.y) / 2;
+}
+
+describe('what is worth going near', () => {
+  it('draws a pickup at its own size in your lap and swells it up the track', () => {
+    for (const rig of [WIDE, TALL]) {
+      assert.ok(prizeSwell(rig, 0) < prizeSwell(rig, PRIZE.far), 'the far one is no bigger');
+      assert.equal(prizeSwell(rig, -20), prizeSwell(rig, 0), 'it swelled behind the egg');
+      assert.equal(prizeSwell(rig, 900), prizeSwell(rig, PRIZE.far), 'it never stops growing');
+    }
+    assert.equal(prizeSwell(WIDE, 0), 1, 'a pickup under your nose is not its own size');
+  });
+
+  it('never draws one smaller on a phone than it draws it on a desk', () => {
+    for (const ahead of [6, 20, 40, 80]) {
+      const phone = apparent(0.46, ahead);
+      const desk = apparent(16 / 9, ahead);
+      assert.ok(phone >= desk, `at ${ahead}m a phone drew it at ${phone.toFixed(4)} against ${desk.toFixed(4)}`);
+    }
   });
 });

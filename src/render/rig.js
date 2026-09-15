@@ -17,12 +17,35 @@
  * Two framings. A phone held upright has a narrow, tall window: the same
  * camera puts half the screen in the sky, so it gets pulled in, lifted, and
  * tilted down until the track fills the frame again.
+ *
+ * `prize` is the rest of that window's problem, and it is not about the
+ * framing but about the glass. A crumb is a tenth of a metre across and the
+ * far half of the lane arrives in a hand's width of screen through a wider
+ * lens: what is perfectly legible at a desk is two grey pixels on a phone, and
+ * a pickup you can only see on the metre you pass it is not a pickup, it is
+ * something you missed. So they are drawn bigger there.
  */
-export const WIDE = { back: 7.6, up: 2.8, lead: 9, aim: 1.2 };
-export const TALL = { back: 6.4, up: 3.7, lead: 5.5, aim: 0.3 };
+export const WIDE = { back: 7.6, up: 2.8, lead: 9, aim: 1.2, prize: 1 };
+export const TALL = { back: 6.4, up: 3.7, lead: 5.5, aim: 0.3, prize: 1.45 };
 
 export function rigFor(aspect) {
   return aspect < 1 ? TALL : WIDE;
+}
+
+/**
+ * How much bigger than itself a pickup is drawn, this far ahead of the egg.
+ *
+ * It is a lie, and the sliding scale is what keeps it an honest one: at the
+ * egg's feet — where the reach that actually takes the thing is measured, and
+ * where you can see it perfectly well anyway — it is drawn at about its own
+ * size. The swell goes on with the distance, which is the only place it is
+ * needed and the one place nothing but the eye is measuring.
+ */
+export const PRIZE = { far: 46, grow: 0.8 };
+
+export function prizeSwell(rig, gap) {
+  const off = Math.min(1, Math.max(0, gap / PRIZE.far));
+  return (rig.prize ?? 1) * (1 + PRIZE.grow * off);
 }
 
 /**

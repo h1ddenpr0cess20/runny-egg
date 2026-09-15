@@ -14,6 +14,9 @@ const MAX_STEPS = 6;
 /** How long two eggs have to stay off each other after a shoulder. */
 const BARGE = 0.55;
 
+/** And how long being stepped on keeps an egg that is already down there. */
+const TRAMPLE = DOWN.time * 0.45;
+
 /**
  * The run, with no pixels in it: a track, a field, three cracks and a card of
  * six heats. Everything the renderer draws and the HUD reads comes out of
@@ -267,8 +270,11 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
    * can be read and the stones can be seen coming, but the field is six other
    * runners with their own ideas, and the one behind you cannot see round you.
    *
-   * Barging is the exception, and it is the reward for the feather: an egg
-   * with a boost on goes through the back of somebody and keeps going.
+   * Whatever happens here happens to both of them. Contact is the one hazard
+   * on the course with somebody else on the other end of it, and an egg that
+   * clatters you and runs on unmarked is a stone that gets to choose where it
+   * lies. The feather is the only thing that buys a better end of it, and it
+   * buys it by being spent.
    */
   function contact(a, b) {
     if (a.broken || b.broken) return;
@@ -288,55 +294,63 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
      * is your balance. This is also the only thing standing between one fall
      * and the entire field going down in a heap behind it — a pile-up that
      * cracks everybody it touches cracks everybody who touches them.
+     *
+     * It is not nothing for the one on the floor, either. Being trodden on is
+     * how an egg stays down: a boot while it is getting its feet under it buys
+     * it another half second of lying there. What it does not buy is a crack,
+     * because a shell that broke every time somebody went over it is the
+     * pile-up again with a longer fuse.
      */
     if (a.down > 0 || b.down > 0) {
-      const upright = a.down > 0 ? b : a;
-      if (upright.down <= 0) {
-        wobble(upright, 'heap');
-        emitter.emit('bump', { a, b, player: upright === player });
+      for (const racer of [a, b]) {
+        if (racer.down > 0) racer.down = Math.max(racer.down, TRAMPLE);
+        else wobble(racer, 'heap');
       }
+      emitter.emit('bump', { a, b, player: a === player || b === player });
       return;
     }
 
+    /**
+     * The feather goes through the back of somebody, which is the reward for
+     * having crossed the track to pick it up — and it is not a free one. Going
+     * through an egg at that pace is what the feather is spent on: the boost
+     * ends on the contact, and what the charger carries out the other side is
+     * a wobble. It is still the better end of the deal by a distance, because
+     * the egg in front is on the grass with a crack in it.
+     */
     const charging = a.boost > 0 && b.boost <= 0 ? a : (b.boost > 0 && a.boost <= 0 ? b : null);
     if (charging) {
       const hit = charging === a ? b : a;
-      trip(charging, STUMBLE.time * 0.4);
+      charging.boost = 0;
+      trip(charging, STUMBLE.time);
       floor(hit, 'barged');
       emitter.emit('barge', { by: charging, hit, player: charging === player });
       return;
     }
 
     /**
-     * A shoulder between equals: both wobble. Anybody who was already off
-     * balance when it landed goes down with it, and if they were both steady
-     * it is the smaller egg that loses the argument.
+     * A shoulder between two eggs that are both still on their feet, and
+     * neither of them walks away from it: both go down, and going down is what
+     * cracks a shell — here as it is for a stone and for a bar.
      *
-     * Going down is what cracks a shell — here as it is for a stone and for a
-     * bar, and there is no second rule for eggs. Cracking both of them on the
-     * contact *as well* was double jeopardy pointed the wrong way round: the
-     * brush that nobody fell over took the crack, and the grace it opened was
-     * still running a tick later when the fall it caused went to take one, so
-     * the fall cost nothing. Two eggs of a size now trade balance for balance
-     * and the floor decides the rest.
+     * One of them used to get up unmarked, and from inside the race that read
+     * as a coin toss: the egg that came across you took nothing for it while
+     * the crack was all yours. Two eggs into each other at fifteen metres a
+     * second is two eggs on the grass, and the one that caused it pays the
+     * same as the one that was there first.
+     *
+     * What is still decided is who gets up first, because that is the half
+     * second the place is lost in. Being off balance when it landed, giving
+     * away size, or catching the heels of the runner in front is what leaves
+     * an egg down there longest.
      */
     const wasA = a.stumble > 0;
     const wasB = b.stumble > 0;
-    wobble(a, 'egg');
-    wobble(b, 'egg');
-    if (wasA) floor(a, 'egg');
-    if (wasB) floor(b, 'egg');
-    if (!wasA && !wasB) {
-      /**
-       * Two steady eggs and somebody still ends up on the grass: a shoulder
-       * at fifteen metres a second is not a tap. The heavier one wins it when
-       * there is enough between them to feel; between two of a size it is the
-       * one that came from behind that goes, because what actually puts a
-       * runner down is catching the heels of the runner in front.
-       */
-      const mismatched = Math.abs(a.size - b.size) > 0.06;
-      floor(mismatched ? (a.size <= b.size ? a : b) : (a.z <= b.z ? a : b), 'egg');
-    }
+    const worse = wasA !== wasB
+      ? (wasA ? a : b)
+      : (Math.abs(a.size - b.size) > 0.06 ? (a.size <= b.size ? a : b) : (a.z <= b.z ? a : b));
+    floor(a, 'egg', a === worse ? DOWN.time * 1.35 : DOWN.time * 0.8);
+    floor(b, 'egg', b === worse ? DOWN.time * 1.35 : DOWN.time * 0.8);
     emitter.emit('bump', { a, b, player: a === player || b === player });
   }
 

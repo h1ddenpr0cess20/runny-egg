@@ -9,7 +9,7 @@ import { createGround } from './ground.js';
 import { streak } from './materials.js';
 import { createDebris, createHurdle, createPickup, createSplat } from './props.js';
 import { createScenery } from './scenery.js';
-import { focus as aimAt, rigFor, seat } from './rig.js';
+import { focus as aimAt, prizeSwell, rigFor, seat } from './rig.js';
 
 const CHASE = 6;
 const DRAW = { behind: 22, ahead: 150 };
@@ -112,7 +112,7 @@ export function createView({ scene, camera }) {
     return runner;
   }
 
-  function syncTrack(track, player, time) {
+  function syncTrack(track, player, time, rig) {
     hurdles.begin();
     for (let i = track.seek(track.hurdles, player.z - DRAW.behind); i < track.hurdles.length; i++) {
       const bar = track.hurdles[i];
@@ -141,7 +141,20 @@ export function createView({ scene, camera }) {
       if (item.taken) continue;
       const mesh = prizes[item.kind]?.take();
       if (!mesh) continue;
-      mesh.position.set(item.x, item.y + Math.sin(time * 2.4 + item.z) * 0.08, item.z);
+      /**
+       * Drawn at the size the framing needs it to be rather than the size it
+       * is, and lifted by what it grew so a swollen crumb still sits on the
+       * grass instead of half inside it. The bob rides the same number: what
+       * catches an eye at forty metres is the moving thing, and on a phone
+       * there is not enough of the thing for it to move by.
+       */
+      const swell = prizeSwell(rig, item.z - player.z);
+      mesh.scale.setScalar(swell);
+      mesh.position.set(
+        item.x,
+        item.y + (swell - 1) * 0.12 + Math.sin(time * 2.4 + item.z) * 0.08 * swell,
+        item.z,
+      );
       /** Crumbs sit still on the ground; the rest turn, because the rest are
        *  worth crossing the track for and have to say so. */
       if (item.kind === 'crumb') mesh.rotation.set(0.4, item.z, 0.2);
@@ -333,7 +346,8 @@ export function createView({ scene, camera }) {
       if (!track) return;
 
       const running = state === 'running';
-      syncTrack(track, player, time);
+      const rig = rigFor(camera.aspect);
+      syncTrack(track, player, time, rig);
 
       for (const [i, racer] of racers.entries()) {
         const runner = runners.get(racer.id) ?? enrol(racer, i);
@@ -354,7 +368,6 @@ export function createView({ scene, camera }) {
 
       shake = approach(shake, 0, 6, dt);
 
-      const rig = rigFor(camera.aspect);
       seat(target, player, 0, rig, shake);
       if (placed) camera.position.lerp(target, 1 - Math.exp(-dt * CHASE));
       else {

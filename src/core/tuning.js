@@ -43,8 +43,13 @@ export const PACE_FROM_STANDING = 0.42;
  */
 export const PLAYER_PACE = 1.015;
 
-/** What multiplies the pace, and for how long. */
-export const BOOST = { speed: 1.34, time: 2.6 };
+/**
+ * What multiplies the pace, and for how long. The feather runs long enough to
+ * be spent rather than merely noticed: at two and a half seconds it was over
+ * before the lane it bought you was any use, and the whole point of it is that
+ * it is worth crossing the track for.
+ */
+export const BOOST = { speed: 1.34, time: 3.6 };
 export const STUMBLE = { speed: 0.55, time: 0.85 };
 export const DOWN = { speed: 0.1, time: 1.15 };
 export const FLOAT = { jump: 1.16, gravity: 0.72, time: 7 };

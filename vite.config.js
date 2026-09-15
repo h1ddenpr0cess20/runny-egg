@@ -5,7 +5,14 @@ export default defineConfig({
   server: { port: 5173, host: true },
   build: {
     target: 'es2022',
-    sourcemap: true,
+    /**
+     * Off in the build that ships. A sourcemap of this is three and a quarter
+     * megabytes against a bundle of seven hundred and eighty kilobytes — four
+     * times the whole game, served to every phone that opens it, to hand a
+     * readable stack trace to nobody in particular. `npm run dev` maps
+     * everything anyway, which is where the stack traces worth reading are.
+     */
+    sourcemap: false,
     chunkSizeWarningLimit: 800,
   },
 });

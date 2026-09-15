@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { EGG_HEIGHT } from '../core/shape.js';
+import { EGG_HEIGHT, shapeEgg } from '../core/shape.js';
 import { EGG } from '../core/tuning.js';
 import { createCracks } from './cracks.js';
 import { shade } from './materials.js';
@@ -77,7 +77,8 @@ export function createEgg({ tint = 0xffffff, size = 1, seed = 1 } = {}) {
 /**
  * Two halves of a shell, for an egg that did not finish. They are cut off the
  * same profile as the whole one — a broken egg is recognisably the egg it was
- * a second ago, which is most of why it lands.
+ * a second ago, which is most of why it lands. It used to be a plain sphere
+ * with a stretch on it, which is a different shape and read as one.
  *
  * Each half is drawn twice: the dyed outside, and a cream inside behind it.
  * A single double-sided bowl is the obvious way to do this and it is wrong —
@@ -85,6 +86,10 @@ export function createEgg({ tint = 0xffffff, size = 1, seed = 1 } = {}) {
  * straight into it and the thing reads as a smear of tinted glass rather than
  * as a piece of shell. Real shell is dyed on one side and not on the other,
  * and that contrast is the only thing that makes it look solid.
+ *
+ * They are built resting on y=0 rather than hanging below the middle of an
+ * egg that is no longer there, because `view.js` drops the whole group to the
+ * grass the moment the shell goes.
  */
 function createShards(tint) {
   const group = new THREE.Group();
@@ -107,17 +112,25 @@ function createShards(tint) {
   });
 
   for (const [i, tilt] of [-1, 1].entries()) {
-    /** Half a shell, open along its long axis, so the inside shows. */
-    const geometry = new THREE.SphereGeometry(0.8, 28, 20, 0, Math.PI);
-    const positions = geometry.attributes.position.array;
-    for (let p = 0; p < positions.length; p += 3) positions[p + 1] *= 1.12;
-    geometry.computeVertexNormals();
+    /** Half a shell, split along its long axis, so the inside shows. */
+    const geometry = new THREE.SphereGeometry(1, 36, 24, 0, Math.PI);
+    shapeEgg(geometry.attributes.position.array);
 
-    const half = new THREE.Group();
-    half.add(new THREE.Mesh(geometry, outside), new THREE.Mesh(geometry, inside));
-    half.rotation.set(Math.PI / 2 + tilt * 0.4, tilt * 1.1, tilt * 0.5);
-    half.position.set(tilt * 0.52, -0.6, i * 0.16 - 0.08);
-    group.add(half);
+    /**
+     * Tipped onto its side with the break facing up and out, the way half a
+     * shell comes to rest — then dropped onto the grass by whatever its own
+     * lowest point turns out to be, which is cheaper to measure than to work
+     * out from three rotations.
+     */
+    geometry.rotateX(Math.PI / 2);
+    geometry.rotateZ(tilt * 0.34);
+    geometry.rotateY(tilt * 0.5);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.translate(tilt * 0.46, -geometry.boundingBox.min.y, i * 0.3 - 0.15);
+    geometry.computeBoundingBox();
+
+    group.add(new THREE.Mesh(geometry, outside), new THREE.Mesh(geometry, inside));
   }
 
   return group;

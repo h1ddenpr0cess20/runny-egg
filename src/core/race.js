@@ -308,21 +308,34 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
     }
 
     /**
-     * A shoulder between equals: both wobble and both crack. Anybody who was
-     * already off balance when it landed goes down with it, and if they were
-     * both steady it is the smaller egg that loses the argument.
+     * A shoulder between equals: both wobble. Anybody who was already off
+     * balance when it landed goes down with it, and if they were both steady
+     * it is the smaller egg that loses the argument.
+     *
+     * Going down is what cracks a shell — here as it is for a stone and for a
+     * bar, and there is no second rule for eggs. Cracking both of them on the
+     * contact *as well* was double jeopardy pointed the wrong way round: the
+     * brush that nobody fell over took the crack, and the grace it opened was
+     * still running a tick later when the fall it caused went to take one, so
+     * the fall cost nothing. Two eggs of a size now trade balance for balance
+     * and the floor decides the rest.
      */
     const wasA = a.stumble > 0;
     const wasB = b.stumble > 0;
     wobble(a, 'egg');
     wobble(b, 'egg');
-    crack(a, 'egg');
-    crack(b, 'egg');
-    if (wasA && !a.broken) floor(a, 'egg');
-    if (wasB && !b.broken) floor(b, 'egg');
+    if (wasA) floor(a, 'egg');
+    if (wasB) floor(b, 'egg');
     if (!wasA && !wasB) {
-      const lighter = a.size <= b.size ? a : b;
-      if (!lighter.broken && Math.abs(a.size - b.size) > 0.06) floor(lighter, 'egg');
+      /**
+       * Two steady eggs and somebody still ends up on the grass: a shoulder
+       * at fifteen metres a second is not a tap. The heavier one wins it when
+       * there is enough between them to feel; between two of a size it is the
+       * one that came from behind that goes, because what actually puts a
+       * runner down is catching the heels of the runner in front.
+       */
+      const mismatched = Math.abs(a.size - b.size) > 0.06;
+      floor(mismatched ? (a.size <= b.size ? a : b) : (a.z <= b.z ? a : b), 'egg');
     }
     emitter.emit('bump', { a, b, player: a === player || b === player });
   }

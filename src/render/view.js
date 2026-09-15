@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { approach, clamp, spring } from '../core/motion.js';
+import { EGG_GIRTH } from '../core/shape.js';
 import { BOOST, EGG, laneX } from '../core/tuning.js';
 import { createBirds } from './birds.js';
 import { createEgg, createShadow, EGG_SCALE } from './egg.js';
@@ -23,7 +24,7 @@ const ROCK = { amount: 0.08, speed: 11, lean: 0.13, spin: 0.45 };
  * a capsule. Sub-stepping is the whole fix, and it matters because the
  * silhouette is the asset.
  */
-const SQUASH = { k: 190, c: 11, step: 1 / 120, max: 0.4, stretch: -0.08 };
+const SQUASH = { k: 190, c: 11, step: 1 / 120, max: 0.26, stretch: -0.08, kick: 3 };
 
 /** Which prop stands in for which lump on the track. */
 const LUMP = { boulder: 'boulder', root: 'root', divot: 'root', stone: 'rock', clod: 'rock' };
@@ -169,27 +170,48 @@ export function createView({ scene, camera }) {
     for (let left = Math.min(dt, 0.25); left > 0; left -= SQUASH.step) {
       spring(runner.squash, SQUASH.k, SQUASH.c, Math.min(SQUASH.step, left), 0);
     }
-    /**
-     * Squash freely, stretch barely. The rebound of a landing used to pull the
-     * shell into a capsule, and a stretched egg is not an egg — the silhouette
-     * is the asset, so the spring is only allowed to flatten it.
-     */
-    const s = clamp(runner.squash.p, SQUASH.stretch, SQUASH.max);
 
     /** Going over is eased rather than switched, so a fall is a fall and not
      *  a frame in which the egg is suddenly lying down. */
     const over = racer.down > 0 || racer.broken ? 1 : 0;
     runner.spill = approach(runner.spill, over, racer.broken ? 4 : 9, dt);
+    /** How much of the egg is still on its feet, which is how much of the run
+     *  animation still has anything to say about it. */
+    const upright = 1 - runner.spill;
 
-    const lying = runner.spill * (Math.PI / 2);
-    const height = EGG.height * racer.size;
+    /**
+     * Squash freely, stretch barely. The rebound of a landing used to pull the
+     * shell into a capsule, and a stretched egg is not an egg — the silhouette
+     * is the asset, so the spring is only allowed to flatten it.
+     *
+     * And it is let go of entirely as the egg goes over. The spring works
+     * along the shell's own long axis, and an egg on its side has that axis
+     * lying across the ground: squashing it there pulled the silhouette out
+     * sideways into a shape that was not an egg from any angle, which is what
+     * a hit used to do to one.
+     */
+    const s = clamp(runner.squash.p, SQUASH.stretch, SQUASH.max) * upright;
+    /** Wider by as much as it loses in height. A shell that flattens without
+     *  spreading does not read as squashed, it reads as deflating. */
+    const girth = 1 / Math.sqrt(1 - s);
+
+    /**
+     * How high the middle of an egg sits: half its height on its feet, half
+     * its *width* once it is over. Those are different numbers, and the
+     * collider radius is a third one — using it for the fallen case put a
+     * quarter of a metre of shell under the grass.
+     */
+    const standing = (EGG.height * racer.size) / 2;
+    const fallen = EGG_GIRTH * EGG_SCALE * racer.size;
+
     egg.object.position.set(
       racer.x,
-      racer.y + (height / 2) * (1 - runner.spill) + racer.radius * 0.7 * runner.spill,
+      /** There is nothing holding a broken one up. */
+      racer.broken ? 0 : racer.y + standing * upright + fallen * runner.spill,
       racer.z,
     );
 
-    egg.object.scale.set(1 + s * 0.4, 1 - s, 1 + s * 0.4);
+    egg.object.scale.set(girth, 1 - s, girth);
     egg.object.scale.multiplyScalar(EGG_SCALE * racer.size);
 
     /**
@@ -212,15 +234,29 @@ export function createView({ scene, camera }) {
     const drift = clamp((laneX(racer.lane) - racer.x) * -0.42, -0.4, 0.4);
     const lean = racer.boost > 0 ? ROCK.lean * 2.1 : ROCK.lean;
 
-    egg.object.rotation.set(
-      running ? lean + (racer.grounded ? 0 : -0.12) + (racer.tucked ? 0.3 : 0) : 0,
-      egg.object.rotation.y + (running && racer.down <= 0 ? dt * ROCK.spin : 0),
-      rock + drift + wobble + lying,
+    /**
+     * Where the egg is and which way it is facing go on the group; the pose
+     * goes on the body under it. They are split because the two shell halves
+     * of a broken one hang off the same group, and they must not be tipped
+     * over with the shell that broke — nor squashed by a spring that was
+     * still ringing when it went.
+     */
+    if (running && racer.down <= 0 && !racer.broken) egg.object.rotation.y += dt * ROCK.spin;
+
+    egg.body.rotation.set(
+      running ? (lean + (racer.grounded ? 0 : -0.12) + (racer.tucked ? 0.3 : 0)) * upright : 0,
+      0,
+      (rock + drift + wobble) * upright + runner.spill * (Math.PI / 2),
     );
 
-    if (!running) {
-      /** On the line, waiting: the egg does what Marc does, which is rock. */
-      egg.object.rotation.z = Math.sin(time * 1.2 + runner.phase) * 0.08;
+    /**
+     * On the line, waiting: the egg does what Marc does, which is rock. Only
+     * if it is actually standing, though — this used to overwrite the tip, so
+     * the moment a heat ended every broken egg on the course sat up and bobbed
+     * at half its height, sunk to the middle in the grass.
+     */
+    if (!running && runner.spill < 0.02) {
+      egg.body.rotation.z = Math.sin(time * 1.2 + runner.phase) * 0.08;
       egg.object.position.y += Math.sin(time * 1.5 + runner.phase) * 0.04;
     }
 
@@ -233,9 +269,15 @@ export function createView({ scene, camera }) {
       egg.broken(racer.broken);
     }
 
-    /** A moment of grace is a blink, not a tint — the material is per egg but
-     *  the geometry is not, and a flashing egg reads from anywhere. */
-    egg.body.visible = racer.grace <= 0 || Math.floor(time * 14) % 2 === 0;
+    /**
+     * A moment of grace is a blink, not a tint — the material is per egg but
+     * the geometry is not, and a flashing egg reads from anywhere. Gone one
+     * frame in three rather than every other one: at an even duty it strobed
+     * for a second and a half, and what it strobed away half the time was the
+     * crack it had just been given.
+     */
+    const blinking = racer.grace > 0 && !racer.broken;
+    egg.body.visible = !blinking || Math.floor(time * 12) % 3 !== 0;
 
     const lift = Math.max(0, racer.y);
     runner.shadow.visible = !racer.broken;
@@ -248,7 +290,12 @@ export function createView({ scene, camera }) {
     /** A landing, a pickup and a crack all read as a kick in the springs. */
     kick(force, id = 'marc') {
       const runner = runners.get(id);
-      if (runner) runner.squash.v += force;
+      if (!runner) return;
+      /** Kicks land on top of each other — a fall on the same frame as the
+       *  landing that caused it is two of them, and a barge in a heap is
+       *  several — and an unbounded spring is what turns a shell into a
+       *  pancake it never comes back from. */
+      runner.squash.v = clamp(runner.squash.v + force, -SQUASH.kick, SQUASH.kick);
     },
     jolt(force) { shake = Math.min(1, shake + force); },
 
@@ -273,7 +320,7 @@ export function createView({ scene, camera }) {
       ground = createGround(snapshot.track);
       scenery = createScenery(snapshot.track);
       scene.add(ground.object, scenery.object);
-      birds.reset(scenery.perches);
+      birds.reset(scenery.perches, snapshot.track.seed);
 
       snapshot.racers.forEach((racer, i) => enrol(racer, i));
 

@@ -89,10 +89,15 @@ race.on('fall', (event) => {
 
 race.on('crack', (event) => {
   if (!event.player) return;
+  view.kick(2, event.racer.id);
   view.jolt(1);
   sound.play('crack');
+  /** What is left, not what is spent — and the last one says nothing, because
+   *  the shell is already going and `break` has the line for it. Counting up
+   *  read "1 cracks" on the first one an egg ever took. */
   const left = CRACKS - event.cracks;
-  hud.say(left === 1 ? 'one crack left' : `${event.cracks} cracks`, 'bad');
+  if (left === 1) hud.say('one crack left', 'bad');
+  else if (left > 1) hud.say(`${left} cracks left`, 'bad');
 });
 
 /**

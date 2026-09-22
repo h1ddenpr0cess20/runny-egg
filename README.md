@@ -134,6 +134,41 @@ for. They do look first, mind — not always, and the nervous ones least of all,
 but a shoulder cracks the egg that threw it as surely as the egg that took it,
 and a field that never looked spent the meet crashing into itself.
 
+## The soundtrack
+
+There is no audio file in the repository, and there is music. `soundtrack.js`
+writes it down — one token per sixteenth, `c5 . c5 . a3+c4+f4 -` — and
+`music.js` plays it on the same AudioContext the sound effects use, on
+instruments made of oscillators and noise. Nothing is built until the page has
+had a touch, because no browser will make a sound before one.
+
+It is a fairground organ at a village fête: pipes with a tremulant, a tuba
+going oom, a chord going pah, a bass drum, a woodblock, and a glockenspiel for
+the crumbs — the band at every sports day there has ever been, wheeled out on
+a cart.
+
+The card is a waltz on a steam whistle, because the card is the bit of the meet
+where everybody stands about. A heat is a galop in F, and the band plays it a
+semitone higher and four beats a minute quicker every heat, so the warm-up is
+in F and the final is in B flat and in a hurry. Within a heat it builds with
+how far round you are: the tune and the oom-pah off the line, the woodblock
+and the snare once the field has settled, the glockenspiel and a crash every
+four bars from a little before halfway, and for the run-in a second rank of
+pipes a third under the first. A crack muffles the whole band for a second.
+
+Qualifying gets a fanfare and the gold gets a longer one. Going out of the
+meet, cracked or just slow, gets a sad trombone, and the last note of it is
+given up on slowly. All three hand back to the waltz.
+
+The sequencer never plays anything at the moment it is asked to. It puts
+notes down a quarter of a second ahead on the audio clock, so a frame that
+hitches is not a note that arrives late — and further ahead than that when the
+frames are coming slowly, since a phone that is struggling is struggling on
+every one of them. A tab that comes back from the background drops what it
+missed and stays on the grid, rather than playing a minute of music at once.
+`M` mutes it with everything else, and it keeps time while it is off, so it
+comes back on the beat.
+
 ## How it holds together
 
 The race is a plain object graph with no pixels in it — track, field, cracks,
@@ -179,6 +214,8 @@ src/
     hud.js              The readouts, the callouts, the card and the board
     input.js            Keys and swipes → one frame of intent
     sound.js            A handful of oscillators' worth of village fête
+    music.js            A sequencer that reads its parts out of strings
+    soundtrack.js       A fairground organ: a waltz, a galop, and fanfares
     best.js             The only thing that survives a meet
 test/                 node:test, including an autopilot that has to get round
 ```
@@ -219,7 +256,7 @@ of its way for a feather — and the suite fails if it cannot get round.
 | `npm run dev` | Vite |
 | `npm run build` | Bundles to `dist/` |
 | `npm run preview` | Serves the build |
-| `npm test` | `node:test` over the core, the HUD and the page |
+| `npm test` | `node:test` over the core, the HUD, the page and the music |
 | `npm run lint` | ESLint |
 
 CI runs the lint, the tests on Node 22.12 and 24, and a build that then has to

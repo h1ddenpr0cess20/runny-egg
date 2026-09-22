@@ -136,9 +136,16 @@ function createShards(tint) {
   return group;
 }
 
-/** The smudge an egg puts on the grass, which is how you read a jump. */
+/**
+ * The smudge an egg puts on the grass, which is how you read a jump.
+ *
+ * Its material is its own rather than the shared one: the opacity tracks how
+ * high *this* egg is off the grass, and seven shadows sharing one material
+ * means seven shadows all wearing whichever egg was drawn last — the field's
+ * shadows faded in and out together with the back marker's jump.
+ */
 export function createShadow() {
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), shade());
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), shade().clone());
   mesh.rotation.x = -Math.PI / 2;
   mesh.renderOrder = 1;
   mesh.name = 'shadow';

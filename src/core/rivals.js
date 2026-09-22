@@ -67,10 +67,22 @@ export function createField({ seed = 1, heat, lanes = LANES } = {}) {
     .filter((lane) => lane !== Math.floor(lanes / 2))
     .sort((a, b) => Math.abs(a - lanes / 2) - Math.abs(b - lanes / 2));
 
+  /**
+   * A card can enter more eggs than there are lanes left for them. Two of
+   * them on the same lane on the same line start the heat inside each other,
+   * and `contact` reads that for exactly what it looks like: from the second
+   * heat on, a pair went down and took a crack each before anybody had run a
+   * metre. So the line fills, and then the rest of the field starts a row
+   * behind it — far enough back that nobody is standing in anybody.
+   */
+  const ROW_BACK = 2.4;
+
   const minds = new Map();
   const racers = roster.map((entry, i) => {
-    const racer = createRacer({ ...entry, lane: order[i % order.length] });
-    toTheLine(racer, order[i % order.length], heat.pace);
+    const lane = order[i % order.length];
+    const row = Math.floor(i / order.length);
+    const racer = createRacer({ ...entry, lane });
+    toTheLine(racer, lane, heat.pace, row ? -row * ROW_BACK : 0);
     minds.set(racer.id, {
       /** Everything this egg does badly, in one number. */
       poise: Math.min(1, entry.nerve * (0.55 + heat.skill * 0.6)),

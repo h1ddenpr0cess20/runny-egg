@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { advance } from '../src/core/racer.js';
+import { createRace } from '../src/core/race.js';
 import { createField } from '../src/core/rivals.js';
 import { ROSTER } from '../src/core/roster.js';
 import { createTrack } from '../src/core/track.js';
@@ -61,6 +62,38 @@ describe('the field', () => {
       for (const racer of racers) {
         assert.notEqual(racer.lane, Math.floor(LANES / 2));
         assert.ok(racer.lane >= 0 && racer.lane < LANES);
+      }
+    }
+  });
+
+  /**
+   * A card can enter more eggs than there are lanes left beside the player,
+   * and two on the same lane on the same line start the heat inside each
+   * other: `contact` fells the pair and cracks them both before anybody has
+   * run a metre. Whatever the field size, no two of them start within reach.
+   */
+  it('never stands one egg inside another on the line', () => {
+    for (const heat of HEATS) {
+      const { racers } = createField({ seed: 3, heat });
+      for (const [i, a] of racers.entries()) {
+        for (const b of racers.slice(i + 1)) {
+          const apart = Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z));
+          assert.ok(
+            apart > a.radius + b.radius,
+            `${a.name} and ${b.name} start inside each other in ${heat.name}`,
+          );
+        }
+      }
+    }
+  });
+
+  it('leaves the line clean, with nobody down and nothing cracked', () => {
+    for (const heat of HEATS) {
+      const race = createRace({ seed: 5, heats: [heat] });
+      race.play(5);
+      for (let i = 0; i < 90; i++) race.advance(1 / 90);
+      for (const racer of race.snapshot().racers) {
+        assert.equal(racer.cracks, 0, `${racer.name} was cracked off the line in ${heat.name}`);
       }
     }
   });

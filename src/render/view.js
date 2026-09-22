@@ -89,6 +89,10 @@ export function createView({ scene, camera }) {
     for (const runner of runners.values()) {
       scene.remove(runner.egg.object, runner.shadow);
       runner.egg.dispose();
+      /** The shadow's plane and its own material go with it — six heats of
+       *  seven eggs is forty-two of each left behind otherwise. */
+      runner.shadow.geometry.dispose();
+      runner.shadow.material.dispose();
     }
     runners.clear();
   }

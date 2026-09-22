@@ -176,7 +176,7 @@ export function createTrack({ seed = 1, heat = HEATS[0] } = {}) {
     let clear = intBelow(rng, LANES);
     for (let i = 1; i <= rows; i++) {
       const z = seg.z0 + step * i;
-      const lanes = [...Array(LANES).keys()].filter((lane) => Math.abs(lane - clear) > 0);
+      const lanes = [...Array(LANES).keys()].filter((lane) => lane !== clear);
       for (const lane of lanes.slice(0, LANES - OPEN_LANES)) {
         if (z - lastRowZ < ROW_GAP || !open()) break;
         debris.push({

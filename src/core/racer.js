@@ -201,12 +201,16 @@ export function fall(racer, seconds = DOWN.time) {
   return racer;
 }
 
-/** Put an egg on the line, at the pace a standing start leaves it. */
-export function toTheLine(racer, lane, pace) {
+/**
+ * Put an egg on the line, at the pace a standing start leaves it. `z` is how
+ * far behind that line it goes, for a field with more eggs in it than the
+ * track has lanes to put them on.
+ */
+export function toTheLine(racer, lane, pace, z = 0) {
   racer.lane = lane;
   racer.x = laneX(lane);
   racer.y = GROUND_Y;
-  racer.z = 0;
+  racer.z = z;
   racer.vy = 0;
   racer.speed = pace * PACE_FROM_STANDING;
   racer.grounded = true;

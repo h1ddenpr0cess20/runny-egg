@@ -49,9 +49,14 @@ const TRAFFIC = { z: 3.6, lane: 2.4 };
  */
 const JOCKEY = { soonest: 2.2, latest: 6.5 };
 
-/** How much of a look even the most nervous egg in the field takes before it
- *  moves over for no particular reason. */
-const CARE = { idle: 0.4 };
+/**
+ * How much of a look even the most nervous egg in the field takes before it
+ * moves over for no particular reason. At four in ten, the blind switch was
+ * most of the shoulders you ever took: an egg running level with you a lane
+ * over, stepping straight across into yours, with nothing you could have done
+ * about it from where you were.
+ */
+const CARE = { idle: 0.75 };
 
 function blank() {
   return { left: 0, right: 0, jump: false, tuck: false };

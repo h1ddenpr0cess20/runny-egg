@@ -33,7 +33,7 @@ export const TRACK_HALF = (LANES * LANE_WIDTH) / 2;
  * a heat a run-up and makes every stumble cost the seconds it takes to wind
  * back up.
  */
-export const ACCEL = 2.2;
+export const ACCEL = 2.6;
 export const PACE_FROM_STANDING = 0.42;
 
 /**
@@ -41,7 +41,7 @@ export const PACE_FROM_STANDING = 0.42;
  * best of it, which is the whole shape of the game: you do not win these by
  * being fast, you win them by being the one that did not go down.
  */
-export const PLAYER_PACE = 1.015;
+export const PLAYER_PACE = 1.025;
 
 /**
  * What multiplies the pace, and for how long. The feather runs long enough to
@@ -51,7 +51,9 @@ export const PLAYER_PACE = 1.015;
  */
 export const BOOST = { speed: 1.34, time: 3.6 };
 export const STUMBLE = { speed: 0.55, time: 0.85 };
-export const DOWN = { speed: 0.1, time: 1.15 };
+/** `keep` is how much of your speed survives the moment of going over, and
+ *  `rise` the wobble you get up with. */
+export const DOWN = { speed: 0.2, time: 0.95, keep: 0.4, rise: 0.4 };
 export const FLOAT = { jump: 1.16, gravity: 0.72, time: 7 };
 export const GRIP = { time: 6 };
 

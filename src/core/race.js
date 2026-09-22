@@ -18,6 +18,12 @@ const BARGE = 0.55;
 const TRAMPLE = DOWN.time * 0.45;
 
 /**
+ * How long a shoulder leaves each of the pair on the grass, as shares of a
+ * fall: the one that came off worse, and the one that did not.
+ */
+const SHOULDER = { worse: 1.1, better: 0.65 };
+
+/**
  * The run, with no pixels in it: a track, a field, three cracks and a card of
  * six heats. Everything the renderer draws and the HUD reads comes out of
  * here, and nothing in here knows either of them exists.
@@ -279,9 +285,14 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
   function contact(a, b) {
     if (a.broken || b.broken) return;
     if (a.contact > 0 || b.contact > 0) return;
+    /**
+     * Measured round, because an egg is round from above. A box put reach in
+     * both directions at once, so two eggs passing corner to corner, with
+     * daylight between the shells as they are drawn, went down as surely as
+     * two that met square.
+     */
     const reach = a.radius + b.radius;
-    if (Math.abs(a.x - b.x) > reach) return;
-    if (Math.abs(a.z - b.z) > reach) return;
+    if ((a.x - b.x) ** 2 + (a.z - b.z) ** 2 > reach * reach) return;
     /** Over the top of somebody is not into them. */
     if (Math.abs(a.y - b.y) > Math.min(a.height, b.height) * 0.72) return;
 
@@ -300,7 +311,13 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
      * it another half second of lying there. What it does not buy is a crack,
      * because a shell that broke every time somebody went over it is the
      * pile-up again with a longer fuse.
+     *
+     * Two eggs that are both on the grass are lying there, not treading on
+     * each other. They used to be: the pair from a shoulder went down side by
+     * side, and each time the contact window came round again the one about
+     * to get up was held down by the one still lying next to it.
      */
+    if (a.down > 0 && b.down > 0) return;
     if (a.down > 0 || b.down > 0) {
       for (const racer of [a, b]) {
         if (racer.down > 0) racer.down = Math.max(racer.down, TRAMPLE);
@@ -349,8 +366,8 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
     const worse = wasA !== wasB
       ? (wasA ? a : b)
       : (Math.abs(a.size - b.size) > 0.06 ? (a.size <= b.size ? a : b) : (a.z <= b.z ? a : b));
-    floor(a, 'egg', a === worse ? DOWN.time * 1.35 : DOWN.time * 0.8);
-    floor(b, 'egg', b === worse ? DOWN.time * 1.35 : DOWN.time * 0.8);
+    floor(a, 'egg', a === worse ? DOWN.time * SHOULDER.worse : DOWN.time * SHOULDER.better);
+    floor(b, 'egg', b === worse ? DOWN.time * SHOULDER.worse : DOWN.time * SHOULDER.better);
     emitter.emit('bump', { a, b, player: a === player || b === player });
   }
 

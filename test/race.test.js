@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { createRace } from '../src/core/race.js';
 import {
-  BOOST, CRACKS, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX, SCORE,
+  BOOST, CRACKS, DOWN, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX, SCORE,
 } from '../src/core/tuning.js';
 import { pilot, runHeat, runMeet } from './helpers/pilot.js';
 
@@ -284,7 +284,8 @@ describe('race', () => {
       let barged = null;
       race.on('barge', (e) => { barged = e; });
       race.on('crack', (e) => { if (e.player) assert.fail('a barge cost the barger a crack'); });
-      play(race, 1);
+      /** Well inside a fall, so the egg it went through is still lying there. */
+      play(race, DOWN.time * 0.5);
       assert.ok(barged, 'the boost went straight through without touching');
       assert.equal(barged.hit.id, rival.id);
       assert.ok(rival.down > 0, 'the barged egg stayed on its feet');
@@ -315,6 +316,59 @@ describe('race', () => {
       race.advance(1 / 60, null);
       assert.ok(rival.down > 0.05, 'the egg on the grass got up as if nobody had been over it');
       assert.ok(race.player.cracks === 0 && rival.cracks === 0, 'a heap cracked somebody');
+    });
+
+    it('lets two eggs that are both on the grass lie there', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+      rival.down = 0.05;
+      race.player.down = 1;
+
+      race.advance(1 / 60, null);
+      assert.ok(rival.down < 0.05, 'an egg lying down held down the one lying next to it');
+    });
+
+    it('leaves the pair from a shoulder alone until both are back on their feet', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+
+      const falls = [];
+      const heaps = [];
+      race.on('fall', (e) => falls.push(e.racer.id));
+      race.on('trip', (e) => { if (e.reason === 'heap') heaps.push(e.racer.id); });
+      race.advance(1 / 60, null);
+      /**
+       * The rival saw you and pulled for the next lane on the tick it hit you,
+       * so left alone the pair slide apart on the grass. Two eggs merging into
+       * the same lane do not: they lie there together, which is the case.
+       */
+      rival.lane = race.player.lane;
+      rival.x = race.player.x;
+      play(race, DOWN.time * 2);
+      assert.deepEqual(falls.sort(), ['marc', rival.id].sort(), 'one shoulder put somebody down twice');
+      assert.deepEqual(heaps, [], 'the first one up was stood straight back on the other');
+    });
+
+    it('does not count two eggs passing corner to corner as a shoulder', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+      /** Inside reach along both axes, which is what a box counted, and
+       *  outside it as the crow flies. Heading away, into the next lane. */
+      const reach = race.player.radius + rival.radius;
+      rival.z = race.player.z + reach * 0.8;
+      rival.x = race.player.x + reach * 0.8;
+      rival.lane = race.player.lane - 1;
+      assert.ok(laneX(rival.lane) > rival.x, 'the rival is not heading away');
+
+      race.on('fall', () => assert.fail('two eggs that never touched went down'));
+      race.advance(1 / 120, null);
+      assert.equal(race.player.cracks + rival.cracks, 0);
     });
   });
 

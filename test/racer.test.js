@@ -136,6 +136,7 @@ describe('racer', () => {
     push(racer, DOWN.time + 0.02);
     assert.equal(racer.down, 0);
     assert.ok(racer.stumble > 0, 'it stood straight up as if nothing had happened');
+    assert.ok(racer.stumble <= DOWN.rise, 'it got up and wobbled for as long again as it lay there');
     assert.ok(racer.z - before < PACE * DOWN.time * 0.5, 'a fall barely slowed it');
   });
 

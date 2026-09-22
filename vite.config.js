@@ -13,6 +13,8 @@ export default defineConfig({
      * everything anyway, which is where the stack traces worth reading are.
      */
     sourcemap: false,
-    chunkSizeWarningLimit: 800,
+    /** three.js is most of it. The soundtrack is fourteen kilobytes of the
+     *  rest, which is what a whole score costs when it is written down. */
+    chunkSizeWarningLimit: 850,
   },
 });

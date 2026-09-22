@@ -7,7 +7,9 @@ import { createView } from './render/view.js';
 import { readBest, writeBest } from './ui/best.js';
 import { createHud, place } from './ui/hud.js';
 import { createInput } from './ui/input.js';
+import { createMusic } from './ui/music.js';
 import { createSound } from './ui/sound.js';
+import { SOUNDTRACK, forHeat } from './ui/soundtrack.js';
 
 const seed = () => Math.floor(Math.random() * 1e6);
 
@@ -15,6 +17,7 @@ const stage = createScene(document.getElementById('stage'));
 const view = createView(stage);
 const hud = createHud(document, CRACKS);
 const sound = createSound();
+const music = createMusic(SOUNDTRACK, sound);
 const race = createRace({ seed: seed() });
 
 let best = readBest();
@@ -25,6 +28,15 @@ const NAMED = {
   straw: 'straw — sure-footed',
   puff: 'puff — light on your feet',
   patch: 'patched up',
+};
+
+/** What the band plays once a heat is over, by how it went for you. */
+const ENDING = {
+  advance: 'podium',
+  finished: 'podium',
+  champion: 'gold',
+  'knocked out': 'out',
+  broken: 'out',
 };
 
 /**
@@ -38,9 +50,10 @@ race.on('heat', (snapshot) => {
   hud.card(snapshot, best);
 });
 
-race.on('go', () => {
+race.on('go', (snapshot) => {
   hud.running();
   sound.play('go');
+  music.play('heat', forHeat(snapshot.heatIndex));
 });
 
 /** Everything below is the player's egg unless it says otherwise: the field
@@ -92,6 +105,7 @@ race.on('crack', (event) => {
   view.kick(2, event.racer.id);
   view.jolt(1);
   sound.play('crack');
+  music.duck();
   /** What is left, not what is spent — and the last one says nothing, because
    *  the shell is already going and `break` has the line for it. Counting up
    *  read "1 cracks" on the first one an egg ever took. */
@@ -132,6 +146,7 @@ race.on('finish', (event) => {
 race.on('results', (results) => {
   best = writeBest(results.score);
   hud.results(results, best);
+  music.play(ENDING[results.outcome] ?? 'card');
 });
 
 race.on('over', () => {
@@ -150,10 +165,17 @@ hud.onPlay(play);
 
 /** Lay the first heat so there is a start line behind the card. */
 race.preview(seed());
+music.play('card');
+
+/** The card has music too, and no browser will play a note of it before
+ *  somebody has touched the page — so the first touch of anything wakes the
+ *  audio, rather than the gun. */
+for (const type of ['pointerup', 'keydown']) addEventListener(type, () => sound.wake(), { once: true });
 
 const mute = document.getElementById('mute');
 function setMuted(value) {
   sound.muted = value;
+  music.muted = value;
   mute.textContent = value ? 'audio off' : 'audio on';
   mute.setAttribute('aria-pressed', String(value));
 }
@@ -179,6 +201,7 @@ function frame(now) {
   last = now;
 
   const snapshot = race.advance(dt, input.take());
+  music.update(snapshot);
   view.sync(snapshot, dt, now / 1000);
   stage.tick(dt);
   if (snapshot.state === 'running') hud.update(snapshot);

@@ -1,6 +1,6 @@
 import { approach, clamp } from './motion.js';
 import {
-  ACCEL, AIR_JUMPS, AIR_JUMP_SPEED, BOOST, COYOTE, DOWN, EGG, FLOAT, GRAVITY,
+  ACCEL, AIR_JUMPS, AIR_JUMP_SPEED, BOOST, COYOTE, DOWN, EGG, FED, FLOAT, GRAVITY,
   GROUND_Y, JUMP_BUFFER, JUMP_SPEED, LANES, LANE_CHASE, laneX, PACE_FROM_STANDING,
   STUMBLE, TUCK_SPEED,
 } from './tuning.js';
@@ -52,6 +52,7 @@ export function createRacer({
     boost: 0,
     grip: 0,
     float: 0,
+    fed: 0,
 
     cracks: 0,
     broken: false,
@@ -69,6 +70,7 @@ export function paceScale(racer) {
   if (racer.down > 0) return DOWN.speed;
   if (racer.stumble > 0) return STUMBLE.speed;
   if (racer.boost > 0) return BOOST.speed;
+  if (racer.fed > 0) return FED.speed;
   return 1;
 }
 
@@ -89,6 +91,7 @@ export function advance(racer, dt, intent, { pace = 12 } = {}) {
   racer.boost = Math.max(0, racer.boost - dt);
   racer.grip = Math.max(0, racer.grip - dt);
   racer.float = Math.max(0, racer.float - dt);
+  racer.fed = Math.max(0, racer.fed - dt);
 
   /**
    * Time on the floor does not count against being off balance — you get up
@@ -232,6 +235,7 @@ export function toTheLine(racer, lane, pace, z = 0) {
   racer.boost = 0;
   racer.grip = 0;
   racer.float = 0;
+  racer.fed = 0;
   racer.cracks = 0;
   racer.broken = false;
   racer.finished = false;

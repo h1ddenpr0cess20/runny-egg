@@ -9,7 +9,7 @@ const CRACKED = '◌';
 const ORDINAL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 /** What each pickup is called when it lands, and how long it says so. */
-const EFFECT = { boost: 'feather', grip: 'straw', float: 'puff' };
+const EFFECT = { boost: 'feather', grip: 'straw', float: 'puff', fed: 'fed' };
 
 const OUTCOME = {
   advance: { kicker: 'through', lead: 'That is a qualifying place. Next heat.' },

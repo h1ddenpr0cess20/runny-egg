@@ -57,6 +57,19 @@ export const DOWN = { speed: 0.2, time: 0.95, keep: 0.4, rise: 0.4 };
 export const FLOAT = { jump: 1.16, gravity: 0.72, time: 7 };
 export const GRIP = { time: 6 };
 
+/**
+ * A crumb is food, and food is pace. Each one eaten puts `time` on the clock,
+ * up to `most`, and while it runs you are that much quicker — so a trail of
+ * them is a trail worth crossing for, and eating well is the one kick in the
+ * race that belongs to you. The field does not stop to eat.
+ *
+ * `speed` stays under the share of a feather, which keeps it inside the jump
+ * reach the track is laid to; and under the point where the meanest stone in
+ * an ordinary row stops tripping you and starts felling you, so a full belly
+ * is never a reason to go down.
+ */
+export const FED = { speed: 1.04, time: 0.45, most: 3 };
+
 export const GRAVITY = 26;
 export const JUMP_SPEED = 9.4;
 /** A second jump exists, and it is a flail — enough to save a hurdle read

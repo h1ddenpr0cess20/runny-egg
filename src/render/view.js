@@ -249,7 +249,8 @@ export function createView({ scene, camera }) {
       ? Math.sin(time * 19 + runner.phase) * 0.22
       : 0;
     const drift = clamp((laneX(racer.lane) - racer.x) * -0.42, -0.4, 0.4);
-    const lean = racer.boost > 0 ? ROCK.lean * 2.1 : ROCK.lean;
+    /** Into it on a feather, and a little into it on a full belly. */
+    const lean = ROCK.lean * (racer.boost > 0 ? 2.1 : (racer.fed > 0 ? 1.4 : 1));
 
     /**
      * Where the egg is and which way it is facing go on the group; the pose

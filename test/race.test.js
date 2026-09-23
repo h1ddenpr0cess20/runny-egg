@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 
 import { createRace } from '../src/core/race.js';
 import {
-  BOOST, CRACKS, DOWN, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX, SCORE,
+  BOOST, CRACKS, DOWN, FED, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX,
+  PLAYER_PACE, SCORE,
 } from '../src/core/tuning.js';
 import { pilot, runHeat, runMeet } from './helpers/pilot.js';
 
@@ -226,6 +227,32 @@ describe('race', () => {
       assert.equal(taken, 1);
       assert.equal(race.snapshot().crumbs, 1);
       assert.ok(race.score >= SCORE.perCrumb);
+    });
+
+    it('puts a little pace in you for every crumb, up to a point', () => {
+      const race = started(3);
+      const first = only(race, { kind: 'crumb', y: 0.75, taken: false });
+      play(race, 1.4);
+      assert.ok(first.taken, 'the crumb was never eaten');
+      assert.ok(race.player.fed > 0 && race.player.fed <= FED.time, `one crumb put ${race.player.fed} on`);
+
+      /** A trail, packed tighter than any the track lays. */
+      for (let i = 0; i < 20; i++) {
+        race.track.pickups.push({
+          id: 950 + i, z: race.player.z + 3 + i * 0.6, lane: race.player.lane, x: race.player.x,
+          y: 0.75, kind: 'crumb', taken: false,
+        });
+      }
+      race.track.pickups.sort((a, b) => a.z - b.z);
+      let most = 0;
+      for (let i = 0; i < 120 && race.state === 'running'; i++) {
+        race.advance(1 / 60, null);
+        most = Math.max(most, race.player.fed);
+      }
+      assert.ok(most > FED.most * 0.9, `a trail only filled ${most.toFixed(2)}s`);
+      assert.ok(most <= FED.most, 'it ate past full');
+      const pace = race.snapshot().heat.pace * PLAYER_PACE;
+      assert.ok(race.player.speed > pace * 1.01, `fed, it ran ${race.player.speed.toFixed(2)} against ${pace.toFixed(2)}`);
     });
 
     it('hands over a feather, some straw, a puff and a patch', () => {
@@ -500,6 +527,10 @@ describe('race', () => {
     const race = started(1);
     const rival = race.rivals[0];
     rival.z = race.player.z + 30;
+    /** The rest of the line is level with you off the gun, and the first
+     *  crumb puts you a nose in front of whoever is beside you — a real
+     *  overtake, and not the one this is counting. */
+    for (const other of race.rivals.slice(1)) other.z = -400;
     const overtakes = [];
     race.on('overtake', (e) => overtakes.push(e.rival.id));
     play(race, 1);

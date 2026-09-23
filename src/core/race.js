@@ -4,7 +4,7 @@ import { createField } from './rivals.js';
 import { PLAYER_EGG } from './roster.js';
 import { createTrack } from './track.js';
 import {
-  BOOST, CRACKS, DEBRIS, DOWN, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE,
+  BOOST, CRACKS, DEBRIS, DOWN, FED, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE,
   LANES, PICKUP, PLAYER_PACE, SCORE, STUMBLE, YOLK, placeScore,
 } from './tuning.js';
 
@@ -260,6 +260,7 @@ export function createRace({ seed = 1, heats = HEATS, cracks = CRACKS } = {}) {
       if (item.kind === 'crumb') {
         crumbs += 1;
         player.crumbs += 1;
+        player.fed = Math.min(FED.most, player.fed + FED.time);
         emitter.emit('crumb', { item, crumbs });
         continue;
       }

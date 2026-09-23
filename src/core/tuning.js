@@ -41,7 +41,7 @@ export const PACE_FROM_STANDING = 0.42;
  * best of it, which is the whole shape of the game: you do not win these by
  * being fast, you win them by being the one that did not go down.
  */
-export const PLAYER_PACE = 1.025;
+export const PLAYER_PACE = 1.02;
 
 /**
  * What multiplies the pace, and for how long. The feather runs long enough to
@@ -68,7 +68,7 @@ export const GRIP = { time: 6 };
  * an ordinary row stops tripping you and starts felling you, so a full belly
  * is never a reason to go down.
  */
-export const FED = { speed: 1.04, time: 0.45, most: 3 };
+export const FED = { speed: 1.035, time: 0.45, most: 3 };
 
 export const GRAVITY = 26;
 export const JUMP_SPEED = 9.4;

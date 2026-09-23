@@ -73,8 +73,11 @@ Between heats you are patched up. Within one, nothing is.
 ### What is worth going near
 
 Crumbs are the currency and they are lying about everywhere, including in an
-arc over a hurdle, which is the course telling you to jump. Four other things
-turn up rather less often:
+arc over a hurdle, which is the course telling you to jump. They are also food.
+Every one you eat puts a little pace in you for a moment, a trail of them keeps
+it coming for up to three seconds, and the field never stops to eat. That is
+the one kick in the race that is yours, and it is worth crossing a lane for.
+Four other things turn up rather less often:
 
 | | |
 |---|---|

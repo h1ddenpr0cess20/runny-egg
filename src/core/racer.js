@@ -1,6 +1,6 @@
 import { approach, clamp } from './motion.js';
 import {
-  ACCEL, AIR_JUMPS, AIR_JUMP_SPEED, BOOST, COYOTE, DOWN, EGG, FLOAT, GRAVITY,
+  ACCEL, AIR_JUMPS, AIR_JUMP_SPEED, BOOST, COYOTE, DOWN, EGG, FED, FLOAT, GRAVITY,
   GROUND_Y, JUMP_BUFFER, JUMP_SPEED, LANES, LANE_CHASE, laneX, PACE_FROM_STANDING,
   STUMBLE, TUCK_SPEED,
 } from './tuning.js';
@@ -11,8 +11,8 @@ const NONE = { left: 0, right: 0, jump: false, tuck: false };
  * One egg in the race — yours or anybody else's. There is only one of these
  * and only one `advance`, which is the point: a rival that beats you to the
  * line did it under the same gravity, off the same jump, losing the same
- * second and a half to the same stone. The only thing that differs is who
- * writes the intent.
+ * second to the same stone. The only thing that differs is who writes the
+ * intent.
  */
 export function createRacer({
   id = 'egg', name = 'Egg', tint = 0xffffff, size = 1, form = 1, lane = 2, z = 0,
@@ -52,6 +52,7 @@ export function createRacer({
     boost: 0,
     grip: 0,
     float: 0,
+    fed: 0,
 
     cracks: 0,
     broken: false,
@@ -69,6 +70,7 @@ export function paceScale(racer) {
   if (racer.down > 0) return DOWN.speed;
   if (racer.stumble > 0) return STUMBLE.speed;
   if (racer.boost > 0) return BOOST.speed;
+  if (racer.fed > 0) return FED.speed;
   return 1;
 }
 
@@ -89,6 +91,7 @@ export function advance(racer, dt, intent, { pace = 12 } = {}) {
   racer.boost = Math.max(0, racer.boost - dt);
   racer.grip = Math.max(0, racer.grip - dt);
   racer.float = Math.max(0, racer.float - dt);
+  racer.fed = Math.max(0, racer.fed - dt);
 
   /**
    * Time on the floor does not count against being off balance — you get up
@@ -98,7 +101,7 @@ export function advance(racer, dt, intent, { pace = 12 } = {}) {
   const wasDown = racer.down > 0;
   racer.down = Math.max(0, racer.down - dt);
   const up = wasDown && racer.down <= 0;
-  if (up) racer.stumble = Math.max(racer.stumble, 0.4);
+  if (up) racer.stumble = Math.max(racer.stumble, DOWN.rise);
   else if (!wasDown) racer.stumble = Math.max(0, racer.stumble - dt);
 
   const target = pace * paceScale(racer);
@@ -189,15 +192,22 @@ export function trip(racer, seconds = STUMBLE.time) {
  * Over you go. Everything a fall costs is here: the seconds on the floor, the
  * speed, and the crack — because an egg that hits the ground at fifteen metres
  * a second does not get up unmarked.
+ *
+ * What it does not cost is a second fall's worth of wobbling afterwards. The
+ * stumble used to be set to the whole time on the floor, so an egg got up and
+ * then lurched along at half pace for as long again — unless it knew to put a
+ * hand down, which the field always did and a player mostly did not. Whatever
+ * wobble brought you down is spent by the fall, and you get up with a short
+ * one of your own.
  */
 export function fall(racer, seconds = DOWN.time) {
   racer.down = Math.max(racer.down, seconds);
-  racer.stumble = Math.max(racer.stumble, seconds);
+  racer.stumble = DOWN.rise;
   racer.grounded = true;
   racer.tucked = false;
   racer.y = GROUND_Y;
   racer.vy = 0;
-  racer.speed *= 0.3;
+  racer.speed *= DOWN.keep;
   return racer;
 }
 
@@ -225,6 +235,7 @@ export function toTheLine(racer, lane, pace, z = 0) {
   racer.boost = 0;
   racer.grip = 0;
   racer.float = 0;
+  racer.fed = 0;
   racer.cracks = 0;
   racer.broken = false;
   racer.finished = false;

@@ -3,7 +3,8 @@ import { describe, it } from 'node:test';
 
 import { createRace } from '../src/core/race.js';
 import {
-  BOOST, CRACKS, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX, SCORE,
+  BOOST, CRACKS, DOWN, FED, FELLING, FLOAT, GRACE, GRIP, HEATS, HURDLE, LANES, laneX,
+  PLAYER_PACE, SCORE,
 } from '../src/core/tuning.js';
 import { pilot, runHeat, runMeet } from './helpers/pilot.js';
 
@@ -228,6 +229,32 @@ describe('race', () => {
       assert.ok(race.score >= SCORE.perCrumb);
     });
 
+    it('puts a little pace in you for every crumb, up to a point', () => {
+      const race = started(3);
+      const first = only(race, { kind: 'crumb', y: 0.75, taken: false });
+      play(race, 1.4);
+      assert.ok(first.taken, 'the crumb was never eaten');
+      assert.ok(race.player.fed > 0 && race.player.fed <= FED.time, `one crumb put ${race.player.fed} on`);
+
+      /** A trail, packed tighter than any the track lays. */
+      for (let i = 0; i < 20; i++) {
+        race.track.pickups.push({
+          id: 950 + i, z: race.player.z + 3 + i * 0.6, lane: race.player.lane, x: race.player.x,
+          y: 0.75, kind: 'crumb', taken: false,
+        });
+      }
+      race.track.pickups.sort((a, b) => a.z - b.z);
+      let most = 0;
+      for (let i = 0; i < 120 && race.state === 'running'; i++) {
+        race.advance(1 / 60, null);
+        most = Math.max(most, race.player.fed);
+      }
+      assert.ok(most > FED.most * 0.9, `a trail only filled ${most.toFixed(2)}s`);
+      assert.ok(most <= FED.most, 'it ate past full');
+      const pace = race.snapshot().heat.pace * PLAYER_PACE;
+      assert.ok(race.player.speed > pace * 1.01, `fed, it ran ${race.player.speed.toFixed(2)} against ${pace.toFixed(2)}`);
+    });
+
     it('hands over a feather, some straw, a puff and a patch', () => {
       for (const [kind, field, value] of [
         ['feather', 'boost', BOOST.time], ['straw', 'grip', GRIP.time], ['puff', 'float', FLOAT.time],
@@ -284,7 +311,8 @@ describe('race', () => {
       let barged = null;
       race.on('barge', (e) => { barged = e; });
       race.on('crack', (e) => { if (e.player) assert.fail('a barge cost the barger a crack'); });
-      play(race, 1);
+      /** Well inside a fall, so the egg it went through is still lying there. */
+      play(race, DOWN.time * 0.5);
       assert.ok(barged, 'the boost went straight through without touching');
       assert.equal(barged.hit.id, rival.id);
       assert.ok(rival.down > 0, 'the barged egg stayed on its feet');
@@ -315,6 +343,59 @@ describe('race', () => {
       race.advance(1 / 60, null);
       assert.ok(rival.down > 0.05, 'the egg on the grass got up as if nobody had been over it');
       assert.ok(race.player.cracks === 0 && rival.cracks === 0, 'a heap cracked somebody');
+    });
+
+    it('lets two eggs that are both on the grass lie there', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+      rival.down = 0.05;
+      race.player.down = 1;
+
+      race.advance(1 / 60, null);
+      assert.ok(rival.down < 0.05, 'an egg lying down held down the one lying next to it');
+    });
+
+    it('leaves the pair from a shoulder alone until both are back on their feet', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+
+      const falls = [];
+      const heaps = [];
+      race.on('fall', (e) => falls.push(e.racer.id));
+      race.on('trip', (e) => { if (e.reason === 'heap') heaps.push(e.racer.id); });
+      race.advance(1 / 60, null);
+      /**
+       * The rival saw you and pulled for the next lane on the tick it hit you,
+       * so left alone the pair slide apart on the grass. Two eggs merging into
+       * the same lane do not: they lie there together, which is the case.
+       */
+      rival.lane = race.player.lane;
+      rival.x = race.player.x;
+      play(race, DOWN.time * 2);
+      assert.deepEqual(falls.sort(), ['marc', rival.id].sort(), 'one shoulder put somebody down twice');
+      assert.deepEqual(heaps, [], 'the first one up was stood straight back on the other');
+    });
+
+    it('does not count two eggs passing corner to corner as a shoulder', () => {
+      const race = started(3);
+      only(race, { bite: 0.1 });
+      race.track.debris.length = 0;
+      const rival = shoulderTo(race);
+      /** Inside reach along both axes, which is what a box counted, and
+       *  outside it as the crow flies. Heading away, into the next lane. */
+      const reach = race.player.radius + rival.radius;
+      rival.z = race.player.z + reach * 0.8;
+      rival.x = race.player.x + reach * 0.8;
+      rival.lane = race.player.lane - 1;
+      assert.ok(laneX(rival.lane) > rival.x, 'the rival is not heading away');
+
+      race.on('fall', () => assert.fail('two eggs that never touched went down'));
+      race.advance(1 / 120, null);
+      assert.equal(race.player.cracks + rival.cracks, 0);
     });
   });
 
@@ -446,6 +527,10 @@ describe('race', () => {
     const race = started(1);
     const rival = race.rivals[0];
     rival.z = race.player.z + 30;
+    /** The rest of the line is level with you off the gun, and the first
+     *  crumb puts you a nose in front of whoever is beside you — a real
+     *  overtake, and not the one this is counting. */
+    for (const other of race.rivals.slice(1)) other.z = -400;
     const overtakes = [];
     race.on('overtake', (e) => overtakes.push(e.rival.id));
     play(race, 1);

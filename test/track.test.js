@@ -5,7 +5,7 @@ import {
   createTrack, HURDLE_CLEAR, OPEN_LANES, reachAt, RHYTHM, ROW_GAP,
 } from '../src/core/track.js';
 import {
-  APEX, DEBRIS, EGG, HEATS, HURDLE, LANES, LANE_WIDTH, laneX,
+  APEX, DEBRIS, EGG, FED, FELLING, HEATS, HURDLE, LANES, LANE_WIDTH, laneX, PLAYER_PACE,
 } from '../src/core/tuning.js';
 
 const SEEDS = [1, 2, 3, 7, 42, 1024, 65535];
@@ -115,6 +115,21 @@ describe('track', () => {
           rows[i] - rows[i - 1] >= ROW_GAP - 1e-9,
           `${where}: rows ${(rows[i] - rows[i - 1]).toFixed(2)}m apart`,
         );
+      }
+    });
+  });
+
+  /**
+   * Only a boulder fells an egg running at its own pace. Eating puts pace on
+   * you, and the force of a stone is its bite times your speed — so the
+   * meanest ordinary stone has to stay a trip even with a full belly.
+   */
+  it('never lays a stone that a full belly turns into a fall', () => {
+    const fed = PLAYER_PACE * FED.speed;
+    every((track, where) => {
+      for (const lump of track.debris) {
+        if (lump.kind === 'boulder') continue;
+        assert.ok(lump.bite * fed < FELLING, `${where}: a ${lump.kind} of ${lump.bite.toFixed(2)} fells a fed egg`);
       }
     });
   });

@@ -28,7 +28,7 @@ function snapshot(over = {}) {
     time: 14.42,
     cracks: 1,
     crumbs: 9,
-    player: { boost: 0, grip: 0, float: 0 },
+    player: { boost: 0, grip: 0, float: 0, fed: 0 },
     ...over,
   };
 }
@@ -122,10 +122,11 @@ describe('hud', () => {
     hud.update(snapshot());
     assert.equal(page.$('#effects').textContent, '');
 
-    hud.update(snapshot({ player: { boost: 2.1, grip: 0, float: 5.5 } }));
+    hud.update(snapshot({ player: { boost: 2.1, grip: 0, float: 5.5, fed: 1.8 } }));
     const text = page.$('#effects').textContent;
     assert.match(text, /feather 2\.1/);
     assert.match(text, /puff 5\.5/);
+    assert.match(text, /fed 1\.8/);
     assert.doesNotMatch(text, /straw/, 'it announced straw nobody is standing on');
     page.close();
   });

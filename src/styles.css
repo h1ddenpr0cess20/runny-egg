@@ -99,6 +99,7 @@ body::after {
 }
 #effects .grip { background: #d8b85a; }
 #effects .float { background: #dceeff; }
+#effects .fed { background: #f2c65c; }
 
 #callout {
   position: fixed;

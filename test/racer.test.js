@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import { advance, createRacer, fall, paceScale, toTheLine, trip } from '../src/core/racer.js';
 import {
-  AIRTIME, AIR_JUMPS, APEX, BOOST, COYOTE, DOWN, FLOAT, GROUND_Y, JUMP_SPEED,
+  AIRTIME, AIR_JUMPS, APEX, BOOST, COYOTE, DOWN, FED, FLOAT, GROUND_Y, JUMP_SPEED,
   LANES, laneX, STUMBLE,
 } from '../src/core/tuning.js';
 
@@ -136,6 +136,7 @@ describe('racer', () => {
     push(racer, DOWN.time + 0.02);
     assert.equal(racer.down, 0);
     assert.ok(racer.stumble > 0, 'it stood straight up as if nothing had happened');
+    assert.ok(racer.stumble <= DOWN.rise, 'it got up and wobbled for as long again as it lay there');
     assert.ok(racer.z - before < PACE * DOWN.time * 0.5, 'a fall barely slowed it');
   });
 
@@ -198,6 +199,19 @@ describe('racer', () => {
       peak = Math.max(peak, light.y);
     }
     assert.ok(peak > APEX * 1.3, `a puff only reached ${peak.toFixed(2)} against ${APEX.toFixed(2)}`);
+  });
+
+  it('runs a little quicker fed, and a feather still outruns a full belly', () => {
+    const racer = onTheLine();
+    racer.fed = FED.most;
+    assert.equal(paceScale(racer), FED.speed);
+    assert.ok(FED.speed > 1 && FED.speed < BOOST.speed);
+    racer.boost = BOOST.time;
+    assert.equal(paceScale(racer), BOOST.speed);
+    trip(racer);
+    assert.equal(paceScale(racer), STUMBLE.speed, 'a full belly kept its pace through a wobble');
+    toTheLine(racer, 2, PACE);
+    assert.equal(racer.fed, 0, 'it came to the line still fed from the last heat');
   });
 
   it('forgives a jump pressed just late, and just early', () => {
